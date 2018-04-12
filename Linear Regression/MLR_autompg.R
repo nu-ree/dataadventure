@@ -1,6 +1,12 @@
-# Multiple Linear Regression
+# Multiple Linear Regression with autompg data
+#
 # Summarized after studying:
 #     "Advanced R Programming" Week9 Lecture from POSTECH MOOC
+#
+# Data: autompg.csv
+
+
+
 
 # Step 0: Read autompg data
 car<-read.csv("autompg.csv")
@@ -12,7 +18,8 @@ attach(car)
 
 
 
-# Step 1: Explanatory Data Analysis - Draw pariwise plot
+# Step 1: Explanatory Data Analysis
+# Draw pariwise plot
 var1<-c("mpg","disp","hp","wt", "accler")
 pairs(car[var1], main ="Autompg", cex=1, col=car$cyl)
 # colored points by a categorical variable(cyl)
@@ -21,7 +28,7 @@ pairs(car[var1], main ="Autompg", cex=1, col=car$cyl)
 
 summary(lm(hp~mpg)) # coefficient is positive
 plot(hp, mpg) 
-# however, seems like it could be seperated into two groups(hp>=50 and hp<50)
+# however, seems like could be seperated into two groups(hp>=50 and hp<50)
 
 car_sub1<-subset(car, hp>=50)
 plot(car_sub1$hp, car_sub1$mpg, main="hp>=50")
@@ -64,7 +71,7 @@ install.packages("car")
 library(car)
 vif(lm(mpg ~ disp+hp+wt+accler, data=car))
 # VIF<10 is acceptable
-# VIF of disp and wt are both less than 10
+# VIF of disp & wt are both less than 10
 
 
 # Check point 3: residual plot
