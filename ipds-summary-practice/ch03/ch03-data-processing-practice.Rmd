@@ -1,0 +1,234 @@
+---
+title: "<따라 하며 배우는 데이터 과학> 3장 연습문제 풀어보기"
+author: "Nuree Chung"
+date: "2018년 4월 17일"
+output: html_document
+---
+따라하며 배우는 데이터 과학, 권재명, 제이펍
+저자 블로그: https://dataninja.me/
+저자 깃허브: 책에 사용된 코드 https://github.com/jaimyoung/ipds-kr
+
+# 3장. 데이터 취득과 가공(p.33~61)
+연습문제(p.61) 1번~ 4번
+**주의: 정답이 아닐 수 있습니다. solution은 저자의 깃허브에 있습니다. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
+```
+
+
+
+```{r}
+library(gapminder)
+library(data.table)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+```
+
+
+## 1. dplyr 패키지 이용하여 갭마인더 데이터의 다음 요약 통계량 구하기
+  a. 2007년도 나라별 일인당 국민소득은?
+```{r}
+gapminder %>%
+  filter(year == 2007) %>%
+  select(year, country, gdpPercap)
+```
+
+  b. 2007년도 대륙별 일인당 평균 수명의 평균과 중앙값은?
+```{r}
+gapminder %>%
+  filter(year == 2007) %>%
+  group_by(continent) %>%
+  summarize(mean_lifeExp = mean(lifeExp), median_lifeExp = median(lifeExp))
+```
+
+
+# 2. 예제 데이터를 제공하는 다음 페이지를 방문하여 흥미있는 데이터를 하나 선택하여 다운로드 후, R에 읽어들이는 코드를 작성하라
+# 3. 읽어들인 데이터의 범주별 요약 통계량을 작성하라. dplyr 패키지의 %>%, group_by(), summarize를 사용해야 한다
+
+## a. UCI 머신러닝 리포(http://archive.ics.uci.edu/ml/datasets.html)
+
+Online Retail Data Set(Online Retail.xlsx):
+        - 01/12/2010 부터 09/12/2011 까지 한 영국 기반의 무점포 온라인 매장에서 발생한 모든 거래에 대한 정보.
+        - 선물용 이색 상품을 주력으로 판매하는 회사. 주 고객은 도매업체.
+        http://archive.ics.uci.edu/ml/machine-learning-databases/00352/
+        
+데이터 불러오기
+```{r}
+online_retail<-read_excel("Online Retail.xlsx")
+```
+
+
+고객별 거래 횟수, 총 주문액 파악하고 주문액 많은 순으로 정렬하기
+```{r}
+online_retail %>%
+  group_by(CustomerID) %>%
+  summarize(n_orders = n(), total_amount = sum(Quantity*UnitPrice)) %>%
+  arrange(desc(n_orders))
+```
+
+
+제품별 주문량, 총 주문액 파악하고 주문액 많은 제품순으로 정렬하기 (환불액 많은 제품 파악하기 위함)
+```{r}
+online_retail %>%
+  group_by(StockCode) %>%
+  summarize(total_quantity = sum(Quantity),
+            total_sales = sum(Quantity*UnitPrice)) %>%
+  arrange(desc(total_sales))
+```
+
+
+
+## b. R 예제 데이터(https://vincentarelbundock.github.io/Rdatasets/)
+The Forbes 2000 Ranking of the World's Biggest Companies (Year 2004)
+    https://raw.githubusercontent.com/vincentarelbundock/Rdatasets/master/csv/HSAUR/Forbes2000.csv
+```{r}
+Forbes2000 <- read.csv("Forbes2000.csv")
+```
+
+
+Top 100 기업의 국가별 요약 통계치
+```{r}
+Forbes2000 %>%
+  filter(rank <= 100) %>%
+  group_by(country) %>%
+  summarize(n_companies = n(),
+            average_sales = mean(sales),
+            average_profits = mean(profits),
+            average_assets = mean(assets),
+            average_marketvalue = mean(marketvalue)) %>%
+  arrange(desc(n_companies))
+```
+
+
+이익률이 높은 카테고리 찾기
+```{r}
+Forbes2000 %>%
+  group_by(category) %>%
+  summarize(n_companies = n(),
+            average_sales = mean(sales),
+            average_profits = mean(profits),
+            profits_to_sales = mean(profits/sales)) %>%
+  arrange(desc(profits_to_sales))
+```
+
+
+이익률이 높은 기업 찾기
+```{r}
+Forbes2000 %>%
+  select(name, country, category, profits, sales) %>%
+  mutate(profits_to_sales = profits/sales) %>%
+  arrange(desc(profits_to_sales))
+```
+
+
+## c. 머신러닝/데이터 과학 공유/경연 사이트인 캐글(https://www.kaggle.com/)
+Chocolate Bar Ratings
+    https://www.kaggle.com/rtatman/chocolate-bar-ratings/data
+```{r}
+flavors_of_cacao <- read.csv("flavors_of_cacao.csv", encoding = "UTF-8")
+```
+    
+
+평점이 높은 초콜릿을 많이 생산하는 원산지 알아보기
+```{r}
+flavors_of_cacao %>%
+  filter(Rating >= 4) %>%
+  group_by(Broad.Bean.Origin) %>%
+  summarize(n_choco = n(),
+            average_rating = mean(Rating),
+            average_cocoa_percentage = mean(as.numeric(Cocoa.Percent))) %>%
+  arrange(desc(n_choco))
+```
+
+
+
+# 4. 캐글 웹사이트에서 다음 IMDB 영화 정보데이터를 다운로드 하도록 하자. dplyr 패키지를 이용하여 다음 질문에 답하여라.
+- 책에 나온 링크(https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset)는 404 페이지로 연결됨
+- /deepmatrix/imdb-5000-movie-dataset 으로 검색하여 첫 번째 나오는 검색 결과에서 데이터 받음
+```{r}
+tmdb_5000_movies <- fread("tmdb_5000_movies.csv")
+```
+
+## a. 이 데이터는 어떤 변수로 되어 있는가?
+```{r}
+glimpse(tmdb_5000_movies)
+colnames(tmdb_5000_movies)
+```
+
+
+## b. 연도별 리뷰 받은 영화의 개수는?
+```{r}
+n_movies_per_year <- tmdb_5000_movies %>%
+  mutate(release_year = substr(release_date, 1, 4)) %>%
+  group_by(release_year) %>%
+  summarize(n_movies = n())
+n_movies_per_year
+```
+```{r}
+n_movies_per_year %>% ggplot(aes(release_year, n_movies)) + geom_point() + geom_line()
+n_movies_per_year %>% filter(release_year >= 1990) %>% ggplot(aes(release_year, n_movies)) + geom_point() + geom_line()
+```
+
+## c. 연도별 리뷰 평점의 개수는?
+```{r}
+n_votes_per_year <- tmdb_5000_movies %>%
+  mutate(release_year = substr(release_date, 1, 4)) %>%
+  group_by(release_year) %>%
+  summarize(avg_reviews = mean(vote_count))
+n_votes_per_year 
+```
+
+```{r}
+n_votes_per_year %>% ggplot(aes(release_year, avg_reviews)) + geom_point() + geom_line()
+```
+
+
+
+# 5. 'Online SQL Tryit Editor'을 방문하고, 가상의 레스토랑 재료 주문 정보를 기록한 데이터 베이스를 활용해 다음 질문에 답하라
+## a.다음 질문에 답하는 SQL문을 작성하고 실행하라
+ i. Orders 테이블에서 employeeID별 주문수는? 가장 주문 수가 많은 employee ID부터 내림차순으로 출력하라
+```{sql eval=FALSE}
+SELECT * FROM Orders ;
+SELECT employeeID, count(*) NofOrders FROM Orders GROUP BY employeeID ORDER BY NofOrders desc ;
+```
+
+ii. 위의 결과를 Employees 테이블과 결합하고 같은 결과에 FirstName과 LastName을 추가하여 출력하라
+```{sql eval=FALSE}
+SELECT a.employeeID, count(*) NofOrders, b.FirstName, b.LastName 
+FROM Orders a INNER JOIN Employees b 
+		ON a.employeeID = b.employeeID 
+GROUP BY a.employeeID 
+ORDER BY NofOrders DESC;
+```
+
+iii. Orders, OrderDetails, Products 테이블을 결합하여 각 OrderID별로 주문 날짜, 주문 품목 양, 주문 총액을 출력하라
+```{sql eval=FALSE}
+SELECT a.OrderID, a.OrderDate, b.ProductID, 
+	sum(b.Quantity) as n_items, 
+	sum(b.Quantity*c.Price) as total_price  
+FROM Orders a INNER JOIN OrderDetails b 
+		ON a.OrderID = b.OrderID 
+	INNER JOIN  Products c 
+		ON b.ProductID = c.ProductID
+GROUP BY a.OrderID ;
+```
+
+
+## b. Online SQL Tryit에서 제공하는 8개의 테이블은 각각 어떤 열로 구성되어 있는가?
+```{sql eval=FALSE}
+SELECT * FROM Orders;
+```
+Customers : CustomerID	CustomerName	ContactName	Address	City	PostalCode	Country
+Categories : CategoryID	CategoryName	Description
+Employees : EmployeeID	LastName	FirstName	BirthDate	Photo	Notes
+OrderDetails : OrderDetailID	OrderID	ProductID	Quantity
+Orders : OrderID	CustomerID	EmployeeID	OrderDate	ShipperID
+Products : ProductID	ProductName	SupplierID	CategoryID	Unit	Price
+Shipper: ShipperID	ShipperName	Phone
+Supplier: SupplierID	SupplierName	ContactName	Address	City	PostalCode	Country	Phone
+
+
+#------------끝. 

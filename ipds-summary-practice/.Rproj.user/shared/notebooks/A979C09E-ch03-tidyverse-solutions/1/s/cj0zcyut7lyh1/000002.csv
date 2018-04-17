@@ -1,0 +1,4 @@
+"0","df[2989,] %>% glimpse()
+"
+"2","Error in df[2989, ] : object of type 'closure' is not subsettable
+"
