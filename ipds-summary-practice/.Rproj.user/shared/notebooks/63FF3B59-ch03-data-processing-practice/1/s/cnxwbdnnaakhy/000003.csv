@@ -1,3 +1,0 @@
-"0","gapminder %>%"
-"0","  filter(year == 2007) %>%"
-"0","  select(year, country, gdpPercap)"
